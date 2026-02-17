@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Zoo Tycoon: Supabase Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <!-- Supabase Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #f0f9ff;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+
+        .zoo-grid {
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-color: #ecfdf5;
+            border: 4px solid #059669;
+            min-height: 400px;
+        }
+
+        .animal-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .animal-card:hover {
+            transform: translateY(-5px) scale(1.02);
+        }
+
+        .coin-animation {
+            animation: bounce 0.5s infinite alternate;
+        }
+
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-5px); }
+        }
+
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            height: 250px;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #10b981; border-radius: 10px; }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- LOGIN OVERLAY -->
+    <div id="login-overlay" class="fixed inset-0 z-[100] bg-emerald-900 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center">
+            <div class="text-6xl mb-4">🌿</div>
+            <h1 class="text-3xl font-800 text-emerald-800 mb-2">Amazon Zoo Tycoon</h1>
+            <p class="text-slate-500 mb-8">Enter your student name to play and save your progress!</p>
+            
+            <input type="text" id="student-name-input" placeholder="Your Name (e.g. Student1)" 
+                   class="w-full text-center text-xl p-4 border-2 border-slate-300 rounded-2xl mb-4 focus:border-emerald-500 focus:outline-none font-bold text-slate-700">
+            
+            <button onclick="handleLogin()" id="login-btn" class="w-full bg-emerald-600 text-white text-xl font-bold py-4 rounded-2xl hover:bg-emerald-700 transition shadow-lg transform active:scale-95">
+                Start Adventure 🚀
+            </button>
+            <p id="login-status" class="mt-4 text-sm text-emerald-600 font-bold min-h-[20px]"></p>
+        </div>
+    </div>
+
+    <!-- Header & HUD -->
+    <header class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-3xl shadow-xl border-b-4 border-emerald-500 mb-8">
+        <div class="text-center md:text-left mb-4 md:mb-0">
+            <h1 class="text-3xl font-800 text-emerald-700">🌿 Amazon Zoo Tycoon</h1>
+            <p class="text-slate-500 font-semibold flex items-center gap-2 justify-center md:justify-start">
+                Player: <span id="player-name-display" class="text-emerald-600 font-bold">Guest</span>
+                <span id="save-status" class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-400">Not Saved</span>
+            </p>
+        </div>
+        
+        <div class="flex gap-6 items-center">
+            <div class="bg-yellow-100 px-6 py-3 rounded-2xl border-2 border-yellow-400 flex items-center gap-3">
+                <span class="text-2xl coin-animation">🪙</span>
+                <span id="coin-count" class="text-2xl font-bold text-yellow-700">0</span>
+                <span class="text-sm font-bold text-yellow-600 uppercase">Coins</span>
+            </div>
+            <div class="bg-emerald-100 px-6 py-3 rounded-2xl border-2 border-emerald-400 flex items-center gap-3">
+                <span class="text-2xl">🐾</span>
+                <span id="animal-count" class="text-2xl font-bold text-emerald-700">0</span>
+                <span class="text-sm font-bold text-emerald-600 uppercase">Animals</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Column: Study & Earn -->
+        <div class="lg:col-span-5 space-y-6">
+            <div class="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-100">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <span class="bg-blue-500 text-white p-1 rounded">📝</span> 
+                    Answer Questions to Earn Coins
+                </h2>
+                
+                <div id="quiz-container" class="space-y-4">
+                    <!-- Dynamic Question Content -->
+                    <div id="question-card" class="bg-slate-50 p-5 rounded-2xl border border-slate-200">
+                        <p id="question-text" class="text-lg font-semibold text-slate-700 mb-4 italic">
+                            Select a topic below to start earning!
+                        </p>
+                        <div id="options-grid" class="grid grid-cols-1 gap-3">
+                            <!-- Options load here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-6 flex flex-wrap gap-2">
+                    <button onclick="loadCategory('vocabulary')" class="px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold hover:bg-emerald-600 transition">Rainforest Vocabulary</button>
+                    <button onclick="loadCategory('ocean')" class="px-4 py-2 bg-blue-500 text-white rounded-xl font-bold hover:bg-blue-600 transition">Ocean Life</button>
+                    <button onclick="loadCategory('primates')" class="px-4 py-2 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition">Primate Facts</button>
+                </div>
+            </div>
+
+            <!-- Stats & Insights Area -->
+            <div class="bg-white p-6 rounded-3xl shadow-lg border-2 border-slate-100">
+                <h3 class="text-lg font-bold mb-2">Zoo Ecology Report</h3>
+                <div class="chart-container">
+                    <canvas id="zooChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: The Zoo -->
+        <div class="lg:col-span-7 flex flex-col">
+            <div class="flex justify-between items-end mb-4 px-2">
+                <div>
+                    <h2 class="text-2xl font-800 text-slate-800">My Amazon Sanctuary</h2>
+                    <p class="text-slate-500">Collect more coins to expand your zoo!</p>
+                </div>
+                <button onclick="showShop()" class="bg-emerald-600 text-white px-6 py-3 rounded-2xl font-bold shadow-lg hover:bg-emerald-700 transition flex items-center gap-2">
+                    🛒 Open Shop
+                </button>
+            </div>
+
+            <div id="zoo-map" class="zoo-grid rounded-3xl flex-grow p-6 grid grid-cols-2 md:grid-cols-3 gap-4 content-start">
+                <!-- Zoo animals will be placed here -->
+            </div>
+        </div>
+
+    </main>
+
+    <!-- SHOP MODAL -->
+    <div id="shop-modal" class="hidden fixed inset-0 modal-overlay z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col">
+            <div class="p-6 border-b flex justify-between items-center bg-emerald-50">
+                <h2 class="text-2xl font-bold text-emerald-800">Animal Marketplace</h2>
+                <button onclick="closeShop()" class="text-slate-400 hover:text-slate-600 text-3xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="shop-items">
+                <!-- Shop items dynamic -->
+            </div>
+        </div>
+    </div>
+
+    <!-- FEEDBACK TOAST -->
+    <div id="toast" class="fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl text-white font-bold shadow-2xl transition-all duration-300 translate-y-20 opacity-0 pointer-events-none">
+    </div>
+
+    <script>
+        <!-- Confirmation: No SVG used. No Mermaid used. -->
+        <!-- Chosen Palette: Amazon Oasis (Emerald, Slate, Amber) -->
+        
+        // --- SUPABASE CONFIG ---
+        const SUPABASE_URL = 'https://esqnwrcguviqojjpotip.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_B1j0GkPNmBOQA0TlU95IiQ_BEDpRtNl';
+
+        // Fix for "Identifier 'supabase' has already been declared"
+        // 1. We extract createClient from the global 'supabase' object provided by the CDN
+        const { createClient } = window.supabase;
+        
+        // 2. We initialize our client with a unique name 'zooDb' to avoid shadowing the global 'supabase' object
+        // 3. We use 'var' and a global check to make sure this code is safe to re-run
+        var zooDb = window.zooDb || createClient(SUPABASE_URL, SUPABASE_KEY);
+        window.zooDb = zooDb;
+
+        // --- DATA STORE ---
+        let currentPlayerName = null;
+        const gameState = {
+            coins: 0,
+            ownedAnimals: [],
+            categoriesStats: { vocabulary: 0, ocean: 0, primates: 0 }
+        };
+
+        const animals = [
+            { id: 'clownfish', name: 'Clownfish', price: 10, emoji: '🐠', habitat: 'Coral Reef', fact: 'They live in Anemones for protection!' },
+            { id: 'orca', name: 'Orca', price: 25, emoji: '🐋', habitat: 'World Oceans', fact: 'They eat 227kg of food per day!' },
+            { id: 'ollie', name: 'Orangutan', price: 40, emoji: '🦧', habitat: 'Forest Canopy', fact: 'They use their long arms to swing through trees!' },
+            { id: 'frog', name: 'Red Eyed Tree Frog', price: 15, emoji: '🐸', habitat: 'Canopy', fact: 'They are nocturnal (active at night).' },
+            { id: 'viper', name: 'Horned Viper', price: 20, emoji: '🐍', habitat: 'Forest Floor', fact: 'They use camouflage to hide.' },
+            { id: 'gorilla', name: 'Mountain Gorilla', price: 35, emoji: '🦍', habitat: 'Cloud Forests', fact: 'Gorillas are apes, not monkeys!' },
+            { id: 'macaw', name: 'Scarlet Macaw', price: 12, emoji: '🦜', habitat: 'Emergent Layer', fact: 'They can fly high above the forest floor!' },
+            { id: 'jaguar', name: 'Jaguar', price: 50, emoji: '🐆', habitat: 'Rainforest Floor', fact: 'They are excellent swimmers!' }
+        ];
+
+        const questions = {
+            vocabulary: [
+                { q: "Which layer is like an umbrella and blocks rain?", a: "Canopy", o: ["Emergent", "Canopy", "Forest Floor", "Habitat"] },
+                { q: "An animal that is active at night is called...", a: "Nocturnal", o: ["Nocturnal", "Camouflage", "Diurnal", "Behaviour"] },
+                { q: "Where an animal naturally lives is its...", a: "Habitat", o: ["Diet", "Origin", "Habitat", "Appearance"] },
+                { q: "The highest layer where only fliers live is the...", a: "Emergent", o: ["Canopy", "Forest Floor", "Emergent", "Understory"] },
+                { q: "'Furry', 'Scaly', and 'Fuzzy' describe an animal's...", a: "Appearance", o: ["Diet", "Appearance", "Behaviour", "Origin"] },
+                { q: "Herbivore animals have a plant-based...", a: "Diet", o: ["Habitat", "Appearance", "Diet", "Origin"] },
+                { q: "The African Dwarf Frog's name tells us its...", a: "Origin", o: ["Origin", "Behaviour", "Appearance", "Camouflage"] },
+                { q: "The layer that receives the least sunlight is the...", a: "Forest Floor", o: ["Canopy", "Emergent", "Forest Floor", "Clouds"] },
+                { q: "Animals hide from predators using...", a: "Camouflage", o: ["Appearance", "Camouflage", "Diet", "Nocturnal"] },
+                { q: "The way an animal acts is called its...", a: "Behaviour", o: ["Behaviour", "Appearance", "Origin", "Habitat"] }
+            ],
+            ocean: [
+                { q: "What is the specific home of the clownfish?", a: "Anemones", o: ["Rocks", "Anemones", "Sand", "Shells"] },
+                { q: "How many kilograms of food can an Orca eat a day?", a: "227kg", o: ["100kg", "50kg", "227kg", "500kg"] },
+                { q: "Orcas are enormous...", a: "Mammals", o: ["Fish", "Reptiles", "Mammals", "Birds"] },
+                { q: "What is a major problem for the world's oceans?", a: "Pollution", o: ["Pollution", "Too many fish", "Cold water", "Cleanliness"] },
+                { q: "What happens to habitats when temperatures change?", a: "They are in danger", o: ["They get bigger", "They are in danger", "Nothing", "They turn purple"] },
+                { q: "Clownfish use anemones for...", a: "Protection", o: ["Speed", "Protection", "Cooking", "Camouflage"] },
+                { q: "Orcas have black backs and white...", a: "Stomachs", o: ["Fins", "Stomachs", "Eyes", "Teeth"] },
+                { q: "Orcas hunt for food in...", a: "Groups", o: ["Groups", "Pairs", "The daytime only", "Isolation"] },
+                { q: "Seals, sea lions, and turtles are...", a: "Warm-blooded", o: ["Cold-blooded", "Warm-blooded", "Insects", "Plants"] },
+                { q: "What is the natural habitat of the clownfish?", a: "Coral Reefs", o: ["Coral Reefs", "Rivers", "Lakes", "The Deep Sea"] }
+            ],
+            primates: [
+                { q: "Which group of mammals includes monkeys and apes?", a: "Primates", o: ["Reptiles", "Primates", "Rodents", "Birds"] },
+                { q: "Which primate is known for having very long arms?", a: "Orangutan", o: ["Chimpanzee", "Orangutan", "Macaque", "Baboon"] },
+                { q: "A scientist who studies primates is a...", a: "Primatologist", o: ["Botanist", "Primatologist", "Geologist", "Chef"] },
+                { q: "Large primates like Gorillas that have no tails are...", a: "Apes", o: ["Monkeys", "Apes", "Lemuroids", "Felines"] },
+                { q: "Chimpanzees are very smart and can use...", a: "Tools", o: ["Tools", "Computers", "Fire", "Cars"] },
+                { q: "Most primates live in which natural habitat?", a: "Rainforests", o: ["Deserts", "Rainforests", "Arctic", "Cities"] },
+                { q: "When primates lose their home, they lose their...", a: "Natural habitat", o: ["Appearance", "Natural habitat", "Diet", "Name"] },
+                { q: "Primates often live together in social...", a: "Communities", o: ["Communities", "Solo", "Nests", "Hives"] },
+                { q: "A monkey differs from an ape because it usually has a...", a: "Tail", o: ["Tail", "Thumb", "Backbone", "Fur"] },
+                { q: "Many primates are in danger because of...", a: "Deforestation", o: ["Deforestation", "Too much food", "Cold rain", "Cleaning"] }
+            ]
+        };
+
+        let currentCategory = 'vocabulary';
+        let currentQuestionIdx = 0;
+        let chartInstance = null;
+        let saveTimeout = null;
+
+        // --- AUTH & DB LOGIC ---
+
+        async function handleLogin() {
+            const inputName = document.getElementById('student-name-input').value.trim();
+            const statusEl = document.getElementById('login-status');
+            const btn = document.getElementById('login-btn');
+
+            if (!inputName) {
+                statusEl.innerText = "Please enter a name!";
+                return;
+            }
+
+            btn.disabled = true;
+            statusEl.innerText = "Checking student records...";
+
+            try {
+                // 1. Try to fetch existing user
+                const { data, error } = await zooDb
+                    .from('student_progress')
+                    .select('*')
+                    .eq('student_name', inputName)
+                    .single();
+
+                if (error && error.code !== 'PGRST116') { // PGRST116 is 'not found'
+                    throw error;
+                }
+
+                if (data) {
+                    // Load existing game
+                    console.log("Found user:", data);
+                    gameState.coins = data.coins || 0;
+                    gameState.ownedAnimals = data.owned_animals || [];
+                    gameState.categoriesStats = data.stats || { vocabulary: 0, ocean: 0, primates: 0 };
+                    statusEl.innerText = "Welcome back! Loading your zoo...";
+                } else {
+                    // Create new user record
+                    const { error: insertError } = await zooDb
+                        .from('student_progress')
+                        .insert([
+                            { 
+                                student_name: inputName, 
+                                coins: 0, 
+                                owned_animals: [], 
+                                stats: { vocabulary: 0, ocean: 0, primates: 0 }
+                            }
+                        ]);
+                    if (insertError) throw insertError;
+                    statusEl.innerText = "Creating new zoo permit...";
+                }
+
+                // Success!
+                currentPlayerName = inputName;
+                document.getElementById('player-name-display').innerText = currentPlayerName;
+                setTimeout(() => {
+                    document.getElementById('login-overlay').style.display = 'none';
+                    init(); // Start game
+                }, 1000);
+
+            } catch (err) {
+                console.error("Login Error:", err);
+                statusEl.innerText = "Error connecting to HQ. Check console or try again.";
+                btn.disabled = false;
+            }
+        }
+
+        async function saveProgress() {
+            if (!currentPlayerName) return;
+
+            const saveStatus = document.getElementById('save-status');
+            saveStatus.innerText = "Saving...";
+            saveStatus.className = "text-xs bg-yellow-100 px-2 py-1 rounded text-yellow-600";
+
+            // Clear previous pending save
+            if (saveTimeout) clearTimeout(saveTimeout);
+
+            // Debounce save (wait 1s after last action)
+            saveTimeout = setTimeout(async () => {
+                try {
+                    const { error } = await zooDb
+                        .from('student_progress')
+                        .upsert({ 
+                            student_name: currentPlayerName,
+                            coins: gameState.coins,
+                            owned_animals: gameState.ownedAnimals,
+                            stats: gameState.categoriesStats,
+                            updated_at: new Date()
+                        });
+
+                    if (error) throw error;
+
+                    saveStatus.innerText = "Saved";
+                    saveStatus.className = "text-xs bg-emerald-100 px-2 py-1 rounded text-emerald-600";
+                } catch (err) {
+                    console.error("Save failed:", err);
+                    saveStatus.innerText = "Save Failed";
+                    saveStatus.className = "text-xs bg-red-100 px-2 py-1 rounded text-red-600";
+                }
+            }, 1000);
+        }
+
+
+        // --- CORE LOGIC ---
+
+        function init() {
+            renderZoo();
+            renderShop();
+            loadCategory('vocabulary');
+            updateHUD();
+            initChart();
+        }
+
+        function updateHUD() {
+            document.getElementById('coin-count').innerText = gameState.coins;
+            document.getElementById('animal-count').innerText = gameState.ownedAnimals.length;
+        }
+
+        function loadCategory(cat) {
+            currentCategory = cat;
+            currentQuestionIdx = 0;
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const qData = questions[currentCategory][currentQuestionIdx];
+            const qText = document.getElementById('question-text');
+            const optionsGrid = document.getElementById('options-grid');
+            
+            qText.innerText = qData.q;
+            optionsGrid.innerHTML = '';
+            
+            qData.o.forEach(opt => {
+                const btn = document.createElement('button');
+                btn.className = "w-full p-4 text-left bg-white border-2 border-slate-200 rounded-xl font-bold hover:border-blue-400 hover:bg-blue-50 transition active:scale-95";
+                btn.innerText = opt;
+                btn.onclick = () => checkAnswer(opt, qData.a);
+                optionsGrid.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, correct) {
+            if (selected === correct) {
+                gameState.coins += 5;
+                gameState.categoriesStats[currentCategory]++;
+                showToast("✅ Correct! +5 Coins", "bg-emerald-500");
+                
+                // Cycle through questions
+                currentQuestionIdx = (currentQuestionIdx + 1) % questions[currentCategory].length;
+            } else {
+                showToast("❌ Oops! Try again.", "bg-red-500");
+            }
+            updateHUD();
+            showQuestion();
+            updateChart();
+            saveProgress(); // Trigger save
+        }
+
+        function showToast(msg, color) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.className = `fixed bottom-8 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl text-white font-bold shadow-2xl transition-all duration-300 z-[100] ${color}`;
+            t.style.opacity = '1';
+            t.style.transform = 'translate(-50%, -20px)';
+            
+            setTimeout(() => {
+                t.style.opacity = '0';
+                t.style.transform = 'translate(-50%, 20px)';
+            }, 2000);
+        }
+
+        // --- ZOO & SHOP LOGIC ---
+
+        function showShop() {
+            document.getElementById('shop-modal').classList.remove('hidden');
+        }
+
+        function closeShop() {
+            document.getElementById('shop-modal').classList.add('hidden');
+        }
+
+        function renderShop() {
+            const container = document.getElementById('shop-items');
+            container.innerHTML = '';
+            
+            animals.forEach(animal => {
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl flex flex-col items-center text-center";
+                card.innerHTML = `
+                    <span class="text-5xl mb-3">${animal.emoji}</span>
+                    <h3 class="font-bold text-lg">${animal.name}</h3>
+                    <p class="text-xs text-slate-500 mb-4">${animal.fact}</p>
+                    <button onclick="buyAnimal('${animal.id}')" class="mt-auto w-full py-2 bg-yellow-400 text-yellow-900 rounded-xl font-bold hover:bg-yellow-500 transition">
+                        Buy: 🪙 ${animal.price}
+                    </button>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function buyAnimal(id) {
+            const animal = animals.find(a => a.id === id);
+            if (gameState.coins >= animal.price) {
+                gameState.coins -= animal.price;
+                gameState.ownedAnimals.push({...animal, purchaseId: Date.now()});
+                showToast(`🎉 ${animal.name} added to zoo!`, "bg-blue-500");
+                updateHUD();
+                renderZoo();
+                closeShop();
+                saveProgress(); // Trigger save
+            } else {
+                showToast("⚠️ Not enough coins! Study more.", "bg-amber-500");
+            }
+        }
+
+        function renderZoo() {
+            const zooMap = document.getElementById('zoo-map');
+            zooMap.innerHTML = '';
+            
+            gameState.ownedAnimals.forEach(animal => {
+                const div = document.createElement('div');
+                div.className = "animal-card bg-white rounded-2xl shadow-md border-b-4 border-emerald-200 p-4 flex flex-col items-center justify-center relative group";
+                div.innerHTML = `
+                    <span class="text-4xl md:text-5xl mb-1">${animal.emoji}</span>
+                    <span class="text-[10px] font-bold uppercase text-slate-400">${animal.habitat}</span>
+                    <div class="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 text-white text-[10px] p-2 rounded-lg w-32 pointer-events-none z-10 text-center">
+                        ${animal.fact}
+                    </div>
+                `;
+                zooMap.appendChild(div);
+            });
+
+            // Fill empty slots up to 12
+            const emptySlots = Math.max(0, 12 - gameState.ownedAnimals.length);
+            for(let i=0; i<emptySlots; i++) {
+                const slot = document.createElement('div');
+                slot.className = "border-2 border-dashed border-emerald-300 rounded-2xl flex items-center justify-center opacity-40 hover:opacity-100 transition cursor-pointer bg-emerald-50/50 group h-32";
+                slot.innerHTML = `<span class="text-emerald-300 group-hover:text-emerald-500 text-2xl font-bold">+</span>`;
+                slot.onclick = showShop;
+                zooMap.appendChild(slot);
+            }
+        }
+
+        // --- CHARTS ---
+
+        function initChart() {
+            const ctx = document.getElementById('zooChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Vocab', 'Oceans', 'Primates'],
+                    datasets: [{
+                        label: 'Study Progress',
+                        data: [0, 0, 0],
+                        backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
+                        borderRadius: 8,
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    responsive: true,
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: { enabled: true }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, grid: { display: false }, ticks: { stepSize: 1 } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        }
+
+        function updateChart() {
+            chartInstance.data.datasets[0].data = [
+                gameState.categoriesStats.vocabulary,
+                gameState.categoriesStats.ocean,
+                gameState.categoriesStats.primates
+            ];
+            chartInstance.update();
+        }
+
+        // Removed window.onload = init, now triggered by Login
+    </script>
+</body>
+</html>
