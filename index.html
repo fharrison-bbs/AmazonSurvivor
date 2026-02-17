@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amazon Zoo Tycoon: Supabase Edition</title>
+    <title>BBS Amazon Zoo Tycoon: Supa Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <!-- Supabase Client -->
@@ -212,7 +212,15 @@
             { id: 'viper', name: 'Horned Viper', price: 20, emoji: '🐍', habitat: 'Forest Floor', fact: 'They use camouflage to hide.' },
             { id: 'gorilla', name: 'Mountain Gorilla', price: 35, emoji: '🦍', habitat: 'Cloud Forests', fact: 'Gorillas are apes, not monkeys!' },
             { id: 'macaw', name: 'Scarlet Macaw', price: 12, emoji: '🦜', habitat: 'Emergent Layer', fact: 'They can fly high above the forest floor!' },
-            { id: 'jaguar', name: 'Jaguar', price: 50, emoji: '🐆', habitat: 'Rainforest Floor', fact: 'They are excellent swimmers!' }
+            { id: 'jaguar', name: 'Jaguar', price: 50, emoji: '🐆', habitat: 'Rainforest Floor', fact: 'They are excellent swimmers!' },
+            { id: 'toucan', name: 'Toucan', price: 18, emoji: '🦜', habitat: 'Canopy', fact: 'Their large beaks help them reach fruit!' },
+            { id: 'sloth', name: 'Sloth', price: 22, emoji: '🦥', habitat: 'Canopy', fact: 'Sloths are the slowest mammals on Earth.' },
+            { id: 'capybara', name: 'Capybara', price: 30, emoji: '🐹', habitat: 'River Bank', fact: 'The largest rodent in the world!' },
+            { id: 'seaturtle', name: 'Sea Turtle', price: 28, emoji: '🐢', habitat: 'Ocean', fact: 'They return to the same beach to lay eggs.' },
+            { id: 'dolphin', name: 'Dolphin', price: 35, emoji: '🐬', habitat: 'Ocean', fact: 'Dolphins are mammals, not fish!' },
+            { id: 'shark', name: 'Great White Shark', price: 45, emoji: '🦈', habitat: 'Ocean', fact: 'They have thousands of teeth!' },
+            { id: 'monkey', name: 'Spider Monkey', price: 20, emoji: '🐒', habitat: 'Canopy', fact: 'They use their tail like a fifth hand.' },
+            { id: 'tapir', name: 'Tapir', price: 25, emoji: '🐗', habitat: 'Forest Floor', fact: 'They love swimming to cool off.' }
         ];
 
         const questions = {
@@ -226,7 +234,12 @@
                 { q: "The African Dwarf Frog's name tells us its...", a: "Origin", o: ["Origin", "Behaviour", "Appearance", "Camouflage"] },
                 { q: "The layer that receives the least sunlight is the...", a: "Forest Floor", o: ["Canopy", "Emergent", "Forest Floor", "Clouds"] },
                 { q: "Animals hide from predators using...", a: "Camouflage", o: ["Appearance", "Camouflage", "Diet", "Nocturnal"] },
-                { q: "The way an animal acts is called its...", a: "Behaviour", o: ["Behaviour", "Appearance", "Origin", "Habitat"] }
+                { q: "The way an animal acts is called its...", a: "Behaviour", o: ["Behaviour", "Appearance", "Origin", "Habitat"] },
+                { q: "An animal that hunts other animals is a...", a: "Predator", o: ["Prey", "Predator", "Herbivore", "Pet"] },
+                { q: "An animal that is hunted by others is...", a: "Prey", o: ["Predator", "Prey", "Hunter", "King"] },
+                { q: "When a species disappears completely, it is...", a: "Extinct", o: ["Sleeping", "Extinct", "Hiding", "Lost"] },
+                { q: "A place with many different plants and animals has high...", a: "Biodiversity", o: ["Biodiversity", "Temperature", "Altitude", "Pollution"] },
+                { q: "The weather conditions in an area over a long time is...", a: "Climate", o: ["Weather", "Climate", "Storm", "Season"] }
             ],
             ocean: [
                 { q: "What is the specific home of the clownfish?", a: "Anemones", o: ["Rocks", "Anemones", "Sand", "Shells"] },
@@ -238,7 +251,12 @@
                 { q: "Orcas have black backs and white...", a: "Stomachs", o: ["Fins", "Stomachs", "Eyes", "Teeth"] },
                 { q: "Orcas hunt for food in...", a: "Groups", o: ["Groups", "Pairs", "The daytime only", "Isolation"] },
                 { q: "Seals, sea lions, and turtles are...", a: "Warm-blooded", o: ["Cold-blooded", "Warm-blooded", "Insects", "Plants"] },
-                { q: "What is the natural habitat of the clownfish?", a: "Coral Reefs", o: ["Coral Reefs", "Rivers", "Lakes", "The Deep Sea"] }
+                { q: "What is the natural habitat of the clownfish?", a: "Coral Reefs", o: ["Coral Reefs", "Rivers", "Lakes", "The Deep Sea"] },
+                { q: "Coral reefs are often called the... of the sea.", a: "Rainforests", o: ["Rainforests", "Deserts", "Mountains", "Cities"] },
+                { q: "Plastic in the ocean is a major form of...", a: "Pollution", o: ["Food", "Pollution", "Coral", "Habitat"] },
+                { q: "Most ocean life lives in the... zone.", a: "Sunlight", o: ["Sunlight", "Midnight", "Twilight", "Dark"] },
+                { q: "Which is the largest animal on Earth?", a: "Blue Whale", o: ["Orca", "Elephant", "Blue Whale", "Shark"] },
+                { q: "Fish breathe using their...", a: "Gills", o: ["Lungs", "Noses", "Gills", "Mouths"] }
             ],
             primates: [
                 { q: "Which group of mammals includes monkeys and apes?", a: "Primates", o: ["Reptiles", "Primates", "Rodents", "Birds"] },
@@ -250,7 +268,12 @@
                 { q: "When primates lose their home, they lose their...", a: "Natural habitat", o: ["Appearance", "Natural habitat", "Diet", "Name"] },
                 { q: "Primates often live together in social...", a: "Communities", o: ["Communities", "Solo", "Nests", "Hives"] },
                 { q: "A monkey differs from an ape because it usually has a...", a: "Tail", o: ["Tail", "Thumb", "Backbone", "Fur"] },
-                { q: "Many primates are in danger because of...", a: "Deforestation", o: ["Deforestation", "Too much food", "Cold rain", "Cleaning"] }
+                { q: "Many primates are in danger because of...", a: "Deforestation", o: ["Deforestation", "Too much food", "Cold rain", "Cleaning"] },
+                { q: "Primates use their hands and feet to...", a: "Grasp", o: ["Fly", "Swim", "Grasp", "Dig"] },
+                { q: "Cleaning each other's fur is called...", a: "Grooming", o: ["Fighting", "Grooming", "Playing", "Washing"] },
+                { q: "Most primates are... (eat plants and meat).", a: "Omnivores", o: ["Herbivores", "Carnivores", "Omnivores", "Insectivores"] },
+                { q: "Which primate is our closest relative?", a: "Chimpanzee", o: ["Gorilla", "Orangutan", "Chimpanzee", "Lemur"] },
+                { q: "Baby primates are usually carried by their...", a: "Mothers", o: ["Fathers", "Siblings", "Mothers", "Birds"] }
             ]
         };
 
@@ -489,8 +512,8 @@
                 zooMap.appendChild(div);
             });
 
-            // Fill empty slots up to 12
-            const emptySlots = Math.max(0, 12 - gameState.ownedAnimals.length);
+            // Fill empty slots up to 18 (Increased size)
+            const emptySlots = Math.max(0, 18 - gameState.ownedAnimals.length);
             for(let i=0; i<emptySlots; i++) {
                 const slot = document.createElement('div');
                 slot.className = "border-2 border-dashed border-emerald-300 rounded-2xl flex items-center justify-center opacity-40 hover:opacity-100 transition cursor-pointer bg-emerald-50/50 group h-32";
